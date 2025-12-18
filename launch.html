@@ -24,12 +24,11 @@
       FHIR.oauth2.authorize({
         clientId: "mohw-smart-dashboard",
 
-        // ✅ EHR launch 必要 scope
-        scope: "launch launch/patient openid fhirUser patient/*.read",
+        // ✅ EHR launch 必要 scope（加入 write 類 scope）
+        scope: "launch launch/patient openid fhirUser patient/*.read patient/*.write",
 
         // ✅ 必須與 sandbox 註冊完全一致
         redirectUri: "https://lenkun25369-ui.github.io/SMART_APP_develop/index.html",
-
 
         // ✅ 明確帶入，避免 sandbox 判斷錯誤
         iss: iss,

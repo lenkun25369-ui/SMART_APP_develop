@@ -43,6 +43,7 @@
         console.log("🔐 Token length:", accessToken.length);
         console.log("🔐 FHIR Server:", fhirBase);
         console.log("🔐 Patient ID:", pid);
+        console.log("Granted scopes:", client.state.tokenResponse.scope);
 
         document.getElementById("info").textContent =
           "✅ SMART OAuth Ready\n\n" +

@@ -13,12 +13,6 @@
       white-space: pre-wrap;
       padding: 1rem;
     }
-    .token {
-      background: #f6f6f6;
-      border: 1px dashed #999;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-    }
   </style>
 </head>
 
@@ -42,16 +36,18 @@
           throw new Error("No patient context (launch/patient missing)");
         }
 
+        /* ================================
+         * 🔐 Access Token（console only）
+         * ================================ */
+        console.log("🔐 SMART Access Token:", accessToken);
+        console.log("🔐 Token length:", accessToken.length);
+        console.log("🔐 FHIR Server:", fhirBase);
+        console.log("🔐 Patient ID:", pid);
+
         document.getElementById("info").textContent =
           "✅ SMART OAuth Ready\n\n" +
           "FHIR Server:\n" + fhirBase + "\n\n" +
           "Selected Patient:\nPatient/" + pid + "\n\n" +
-          "⚠️ Access Token (Sandbox / Demo only):\n";
-
-        // ⭐ 印出 token（完整）
-        document.getElementById("info").textContent +=
-          accessToken + "\n\n" +
-          "Token length: " + accessToken.length + "\n\n" +
           "Request:\n" +
           `GET Observation?subject=Patient/${pid}\n\n` +
           "Response:\n";
@@ -67,6 +63,7 @@
       .catch(err => {
         document.getElementById("info").textContent =
           "❌ Error:\n" + err;
+        console.error("SMART Error:", err);
       });
   </script>
 </body>

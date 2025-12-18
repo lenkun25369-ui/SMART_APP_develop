@@ -26,15 +26,9 @@
 
   <div id="info">Initializing...</div>
 
-  <button id="go">Send to Shiny App</button>
+  <button id="go" disabled>Send to Shiny App</button>
 
   <script>
-    /**********************************************************
-     * 固定要展示與傳遞的 Observation（Sandbox 中實際存在）
-     **********************************************************/
-    const OBS_URL =
-      "https://thas.mohw.gov.tw/v/r4/fhir/Observation/671123";
-
     /**********************************************************
      * 下游 Shiny App
      **********************************************************/
@@ -43,6 +37,7 @@
     let accessToken = null;
     let fhirBase = null;
     let pid = null;
+    let firstObsId = null;
 
     /**********************************************************
      * SMART OAuth Ready
@@ -52,22 +47,42 @@
         accessToken = client.state.tokenResponse.access_token;
         fhirBase = client.state.serverUrl;
 
+        // ⭐ Sandbox 選擇的病人
+        pid = client.patient.id;
+
+        if (!pid) {
+          throw new Error("No patient context found (launch/patient missing)");
+        }
+
         document.getElementById("info").textContent =
           "✅ SMART OAuth Ready\n\n" +
           "FHIR Server:\n" + fhirBase + "\n\n" +
-          "Fetching Observation:\n" + OBS_URL + "\n";
+          "Selected Patient:\nPatient/" + pid + "\n\n" +
+          "Fetching Observations...\n";
 
-        // ⭐ 核心：直接讀固定 Observation（不使用 patient context）
-        return client.request(OBS_URL);
+        // ⭐ 正規方式：用 patient 查 Observation
+        return client.request(
+          `Observation?subject=Patient/${pid}&_count=10`
+        );
       })
-      .then(obs => {
-        // ⭐ 從 Observation 反推出 patient id
-        pid = obs.subject?.reference?.replace("Patient/", "");
+      .then(bundle => {
+        if (!bundle.entry || bundle.entry.length === 0) {
+          document.getElementById("info").textContent +=
+            "\n⚠️ No Observations found for this patient.";
+          return;
+        }
+
+        const observations = bundle.entry.map(e => e.resource);
+
+        firstObsId = observations[0].id;
 
         document.getElementById("info").textContent +=
-          "\n📄 Observation Resource Loaded:\n\n" +
-          JSON.stringify(obs, null, 2) +
-          "\n\nDerived patient id: " + pid;
+          "\n📄 Observations Loaded (showing up to 10):\n\n" +
+          JSON.stringify(observations, null, 2) +
+          "\n\nUsing Observation ID:\nObservation/" + firstObsId;
+
+        // 啟用按鈕
+        document.getElementById("go").disabled = false;
       })
       .catch(err => {
         document.getElementById("info").textContent =
@@ -78,18 +93,25 @@
      * 傳遞給 Shiny（token + pid + obs + fhir）
      **********************************************************/
     document.getElementById("go").onclick = () => {
+      if (!accessToken || !pid || !firstObsId) {
+        alert("Missing data, cannot send to Shiny");
+        return;
+      }
+
+      const obsUrl = `${fhirBase}/Observation/${firstObsId}`;
+
       const url =
         SHINY_URL +
         "#token=" + encodeURIComponent(accessToken) +
         "&pid=" + encodeURIComponent(pid) +
-        "&obs=" + encodeURIComponent(OBS_URL) +
+        "&obs=" + encodeURIComponent(obsUrl) +
         "&fhir=" + encodeURIComponent(fhirBase);
 
       console.log("Sent to Shiny:", {
         token: accessToken,
         pid: pid,
         fhir: fhirBase,
-        obs: OBS_URL
+        obs: obsUrl
       });
 
       window.location.href = url;
